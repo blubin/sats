@@ -1,48 +1,60 @@
 /**
  * Copyright by Michael Weiss, weiss.michael@gmx.ch
- * <p>
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.spectrumauctions.sats.core.model.mrvm;
+package org.spectrumauctions.sats.core.model.smrvm;
 
-import com.google.common.base.Preconditions;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.jgrapht.GraphPath;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.FloydWarshallShortestPaths;
-import org.jgrapht.graph.*;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Subgraph;
+import org.jgrapht.graph.UnmodifiableGraph;
+import org.jgrapht.graph.UnmodifiableUndirectedGraph;
+
+import com.google.common.base.Preconditions;
+import org.spectrumauctions.sats.core.model.mrvm.MRVMRegionsMap.Region;
+import org.spectrumauctions.sats.core.model.smrvm.SMRVMWorldSetup.RegionSetup;
 import org.spectrumauctions.sats.core.util.random.GaussianDistributionRNG;
 import org.spectrumauctions.sats.core.util.random.RNGSupplier;
-
-import java.io.Serializable;
-import java.util.*;
 
 /**
  * @author Michael Weiss
  *
  */
-public class MRVMRegionsMap implements Serializable {
+public class SMRVMRegionsMap implements Serializable {
 
     private static final long serialVersionUID = -7539511827334949347L;
     private final UnmodifiableUndirectedGraph<Region, DefaultEdge> adjacencyGraph;
     private transient FloydWarshallShortestPaths<Region, DefaultEdge> floyedWarshallDistances = null;
 
 
-    public MRVMRegionsMap(MRVMWorldSetup worldStructure, RNGSupplier rngSupplier) {
-        UndirectedGraph<MRVMWorldSetup.RegionSetup, DefaultEdge> graphStructure =
+    public SMRVMRegionsMap(SMRVMWorldSetup worldStructure, RNGSupplier rngSupplier){
+        UndirectedGraph<RegionSetup, DefaultEdge> graphStructure =
                 worldStructure.drawGraphStructure(rngSupplier.getUniformDistributionRNG());
         adjacencyGraph = makeGraph(graphStructure, rngSupplier.getGaussianDistributionRNG());
-
+        
     }
 
 
     private UnmodifiableUndirectedGraph<Region, DefaultEdge> makeGraph(
-            UndirectedGraph<MRVMWorldSetup.RegionSetup, DefaultEdge> graphStructure,
+            UndirectedGraph<RegionSetup, DefaultEdge> graphStructure,
             GaussianDistributionRNG rng) {
         SimpleGraph<Region, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
-        Map<MRVMWorldSetup.RegionSetup, Region> regions = new HashMap<>();
+        Map<RegionSetup, Region> regions = new HashMap<>();
         int id_count = 0;
-        for (MRVMWorldSetup.RegionSetup regInfo : graphStructure.vertexSet()) {
-            Region reg = new Region(id_count++, regInfo, rng);
+        for (RegionSetup regInfo : graphStructure.vertexSet()) {
+            Region reg = new Region(id_count++, regInfo.toMRVMSetupType(), rng);
             regions.put(regInfo, reg);
             graph.addVertex(reg);
         }
@@ -53,38 +65,38 @@ public class MRVMRegionsMap implements Serializable {
         }
         return new UnmodifiableUndirectedGraph<>(graph);
     }
-
-
-    private FloydWarshallShortestPaths<Region, DefaultEdge> getFloyedWarshallDistances() {
-        if (floyedWarshallDistances == null) {
+    
+    
+    private FloydWarshallShortestPaths<Region, DefaultEdge> getFloyedWarshallDistances(){
+        if(floyedWarshallDistances == null){
             floyedWarshallDistances = new FloydWarshallShortestPaths<>(adjacencyGraph);
         }
         return floyedWarshallDistances;
     }
-
+    
     /**
      * Returns the length of the longest shortest path in the adjacency graph between the specified region and any other region.
      */
-    public int getLongestShortestPath(Region region) {
+    public int getLongestShortestPath(Region region){
         Preconditions.checkArgument(adjacencyGraph.containsVertex(region));
         List<GraphPath<Region, DefaultEdge>> shortestPaths = getFloyedWarshallDistances().getShortestPaths();
         int max = 0;
-        for (GraphPath<Region, DefaultEdge> candidatePath : shortestPaths) {
+        for(GraphPath<Region, DefaultEdge> candidatePath : shortestPaths){
             int length = candidatePath.getEdgeList().size();
-            if (length > max) {
+            if(length > max){
                 max = length;
             }
         }
         return max;
     }
-
+    
     public Set<Region> adjacentRegions(Region region) {
         if (!adjacencyGraph.containsVertex(region)) {
             throw new RuntimeException("Region not part of this map");
         } else {
-            Set<Region> adjacentRegions = new HashSet<>();
+            Set<Region> adjacentRegions = new HashSet<Region>();
             for (Region neighborCandidate : getRegions()) {
-                if (adjacencyGraph.containsEdge(region, neighborCandidate)) {
+                if(adjacencyGraph.containsEdge(region, neighborCandidate)){
                     adjacentRegions.add(neighborCandidate);
                 }
             }
@@ -99,20 +111,20 @@ public class MRVMRegionsMap implements Serializable {
      * {@link Region#isAdjacent(Region)} and similar methods on the regions in the returned graph will return the values
      * w.r.t. the
      * original graph in the map.
-     *
+     * 
      * @param regions
      * @return
      */
     protected UnmodifiableGraph<Region, DefaultEdge> getSubgraph(Set<Region> regions) {
-        Subgraph<Region, DefaultEdge, UndirectedGraph<Region, DefaultEdge>> subgraph = new Subgraph<>(
+        Subgraph<Region, DefaultEdge, UndirectedGraph<Region, DefaultEdge>> subgraph = new Subgraph<Region, DefaultEdge, UndirectedGraph<Region, DefaultEdge>>(
                 adjacencyGraph, regions);
-        return new UnmodifiableGraph<>(subgraph);
+        return new UnmodifiableGraph<Region, DefaultEdge>(subgraph);
     }
 
 
     /**
      * Returns if two regions is adjacent, i.e., if they share a border.
-     *
+     * 
      * @param region
      * @param otherRegion
      * @return
@@ -128,7 +140,7 @@ public class MRVMRegionsMap implements Serializable {
     /**
      * Calculates the distance between two regions in this map.<br>
      * <br>
-     *
+     * 
      * Distance is defined as the length of the shortest path in a graph representation of this map,
      * where two regions share an edge if and only if they are adjacent. All edges have weight / lenght 1.
      * <br>
@@ -138,18 +150,18 @@ public class MRVMRegionsMap implements Serializable {
      * @return
      */
     public int getDistance(Region regionOne, Region regionTwo) {
-        if (regionOne.equals(regionTwo)) {
+        if(regionOne.equals(regionTwo)){
             return 0;
         }
         GraphPath<Region, DefaultEdge> shortestPath = getFloyedWarshallDistances().getShortestPath(regionOne, regionTwo);
-        if (shortestPath == null) {
+        if(shortestPath == null){
             //No path found, return max distance
-            return getNumberOfRegions() - 1;
+            return getNumberOfRegions()-1;
         }
         List<DefaultEdge> path = shortestPath.getEdgeList();
-        if (path == null) {
+        if(path == null){
             //No path found, return max distance
-            return getNumberOfRegions() - 1;
+            return getNumberOfRegions()-1;
         }
         return path.size();
     }
@@ -158,21 +170,21 @@ public class MRVMRegionsMap implements Serializable {
     public Set<Region> getRegions() {
         return Collections.unmodifiableSet(adjacencyGraph.vertexSet());
     }
-
-    public int getNumberOfRegions() {
+    
+    public int getNumberOfRegions(){
         return adjacencyGraph.vertexSet().size();
     }
-
-    public Region getRegion(int id) {
-        for (Region region : getRegions()) {
-            if (region.getId() == id) {
+    
+    public Region getRegion(int id){
+        for(Region region : getRegions()){
+            if(region.getId() == id){
                 return region;
             }
         }
         throw new IllegalArgumentException("ID not known");
     }
 
-
+    
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -190,7 +202,7 @@ public class MRVMRegionsMap implements Serializable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        MRVMRegionsMap other = (MRVMRegionsMap) obj;
+        SMRVMRegionsMap other = (SMRVMRegionsMap) obj;
         if (adjacencyGraph == null) {
             if (other.adjacencyGraph != null)
                 return false;
@@ -198,93 +210,4 @@ public class MRVMRegionsMap implements Serializable {
             return false;
         return true;
     }
-
-
-    public static class Region implements Serializable {
-
-        private static final long serialVersionUID = 6138501456844925185L;
-
-        private final int id;
-        private final int population;
-        private final String note;
-
-        public Region(int id, MRVMWorldSetup.RegionSetup setup, GaussianDistributionRNG rng) {
-            super();
-            this.id = id;
-            this.population = setup.drawPopulation(rng);
-            this.note = setup.getNotice();
-        }
-
-
-        public int getId() {
-            return id;
-        }
-
-        public int getPopulation() {
-            return population;
-        }
-
-        /**
-         * @deprecated Use {@link #getNote()} instead
-         */
-        @Deprecated
-        public String getNotice() {
-            return getNote();
-        }
-
-
-        public String getNote() {
-            return note;
-        }
-
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder()
-                    .append(String.valueOf(id));
-            if (note != null && !note.equals("")) {
-                builder.append(" (")
-                        .append(note)
-                        .append(")");
-            }
-            return builder.toString();
-        }
-
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + id;
-            result = prime * result + ((note == null) ? 0 : note.hashCode());
-            result = prime * result + population;
-            return result;
-        }
-
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Region other = (Region) obj;
-            if (id != other.id)
-                return false;
-            if (note == null) {
-                if (other.note != null)
-                    return false;
-            } else if (!note.equals(other.note))
-                return false;
-            if (population != other.population)
-                return false;
-            return true;
-        }
-
-
-    }
-
-
-}
+ }

@@ -37,6 +37,10 @@ import org.spectrumauctions.sats.core.model.lsvm.LSVMBidderTest;
 import org.spectrumauctions.sats.core.model.lsvm.LSVMWorldTest;
 import org.spectrumauctions.sats.core.model.lsvm.LocalSynergyValueModel;
 import org.spectrumauctions.sats.core.model.mrvm.*;
+import org.spectrumauctions.sats.core.model.smrvm.SMRVMBidderTest;
+import org.spectrumauctions.sats.core.model.smrvm.SMRVMBidderTypeSpecificTest;
+import org.spectrumauctions.sats.core.model.smrvm.SMRVMRandomnessTest;
+import org.spectrumauctions.sats.core.model.smrvm.SMRVMWorldTest;
 import org.spectrumauctions.sats.core.model.srvm.SRVMBidderTest;
 import org.spectrumauctions.sats.core.model.srvm.SRVMRandomnessTest;
 import org.spectrumauctions.sats.core.model.srvm.SRVMTest;
@@ -80,6 +84,11 @@ import java.util.List;
         SRVMRandomnessTest.class,
         CATSWorldTest.class,
         CATSBidderTest.class,
+        SMRVMBidderTest.class,
+        SMRVMBidderTypeSpecificTest.class,
+        SMRVMRandomnessTest.class,
+        SMRVMRandomnessTest.class,
+        SMRVMWorldTest.class,
         // Examples
         BiddingLanguagesExample.class,
         ParameterizingModelsExample.class,

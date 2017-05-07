@@ -109,10 +109,10 @@ public class SimpleModelAccessorsExample {
             Bundle fullBundle = new Bundle<>(world.getLicenses());
             for (Bidder bidder : bidders) {
                 BigDecimal val = bidder.calculateValue(fullBundle);
-                System.out.println("bidder " + bidder.getId() + "has the following value for getting all licenses: " + val.toString());
+//                System.out.println("bidder " + bidder.getId() + "has the following value for getting all licenses: " + val.toString());
             }
         } else {
-            System.out.println("No bidder created");
+//            System.out.println("No bidder created");
         }
     }
 

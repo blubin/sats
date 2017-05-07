@@ -14,6 +14,8 @@ import org.spectrumauctions.sats.core.model.mrvm.MRVMRegionsMap;
 import java.lang.reflect.Type;
 import java.util.*;
 
+import static org.spectrumauctions.sats.core.model.mrvm.MRVMRegionsMap.*;
+
 /**
  * @author Michael Weiss
  *
@@ -26,9 +28,9 @@ public class UndirectedGraphAdapter implements JsonSerializer<UnmodifiableUndire
     @Override
     public JsonElement serialize(UnmodifiableUndirectedGraph<MRVMRegionsMap.Region, DefaultEdge> src, Type typeOfSrc, JsonSerializationContext context) {
         JsonArray result = new JsonArray();
-        for (MRVMRegionsMap.Region region : src.vertexSet()) {
+        for (Region region : src.vertexSet()) {
             SerializedRegion r = new SerializedRegion(region);
-            for (MRVMRegionsMap.Region neighborCandidate : src.vertexSet()) {
+            for (Region neighborCandidate : src.vertexSet()) {
                 if (src.containsEdge(region, neighborCandidate)) {
                     r.addAdjacentRegion(neighborCandidate.getId());
                 }
@@ -70,10 +72,10 @@ public class UndirectedGraphAdapter implements JsonSerializer<UnmodifiableUndire
 
     public static class SerializedRegion {
 
-        private final MRVMRegionsMap.Region node;
+        private final Region node;
         private final SortedSet<Integer> neighbors;
 
-        public SerializedRegion(MRVMRegionsMap.Region node) {
+        public SerializedRegion(Region node) {
             this.node = node;
             neighbors = new TreeSet<>();
         }
@@ -82,7 +84,7 @@ public class UndirectedGraphAdapter implements JsonSerializer<UnmodifiableUndire
             this.neighbors.add(id);
         }
 
-        public MRVMRegionsMap.Region getNode() {
+        public Region getNode() {
             return node;
         }
 
